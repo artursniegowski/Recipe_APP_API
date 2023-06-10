@@ -1,7 +1,11 @@
 ---
 name: Checks
 
-on: [push]
+# on: [push]
+# to make it on push on the main only
+on:
+  push:
+    branches: main
 
 jobs: 
   test-lint:
