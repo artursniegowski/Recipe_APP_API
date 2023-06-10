@@ -1,5 +1,5 @@
 ---
-name: Checks
+name: Test and Lint
 
 # on: [push]
 # to make it on push on the main only
