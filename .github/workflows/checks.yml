@@ -23,6 +23,9 @@ jobs:
         name: Checkout
         uses: actions/checkout@v3 
       - 
+        name: Generate .env file from .env.template
+        run: cp .env.template .env
+      - 
         name: Test
         run: docker-compose run --rm app sh -c "python manage.py wait_for_db && python manage.py test"
       - 
