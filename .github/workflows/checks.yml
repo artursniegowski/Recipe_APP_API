@@ -33,10 +33,13 @@ jobs:
       #   run: docker-compose run --rm app sh -c "flake8"
       -
         name: Wait for database
-        run: docker-compose --verbose run --rm app sh -c "python manage.py wait_for_db"
+        run: docker-compose run --rm app sh -c "python manage.py wait_for_db"
       -
         name: Test database conectivity
-        run: docker-compose --verbose run --rm app sh -c "python manage.py dbshell"
+        run: docker-compose run --rm app sh -c "python manage.py dbshell"
+      -
+        name: Run tests
+        run: docker-compose --verbose run --rm app sh -c "python manage.py test"
       - 
         name: Display database container information
         run: docker-compose ps
