@@ -7,6 +7,7 @@ from psycopg2 import OperationalError as Psycopg2Error
 
 from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError
+from django.db import connections
 
 from typing import Any
 
@@ -25,6 +26,8 @@ class Command(BaseCommand):
         while not db_conn:
             try:
                 self.check(databases=['default'])
+                # Try to establish a connection by executing a test query
+                connections['default'].cursor().execute('SELECT 1')
                 db_conn = True  # if the check is succeesful
                 time.sleep(5)
             except (Psycopg2Error, OperationalError):
