@@ -26,6 +26,9 @@ class Command(BaseCommand):
         while not db_conn:
             try:
                 self.check(databases=['default'])
+                # the  above  check was not enough, github actions raised
+                # an error that the dtabse was not redy yet
+                # this is why we adding extra check
                 # Try to establish a connection by executing a test query
                 connections['default'].cursor().execute('SELECT 1')
                 db_conn = True  # if the check is succeesful

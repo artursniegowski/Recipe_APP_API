@@ -25,6 +25,14 @@ from django.test import SimpleTestCase
 class CommandTest(SimpleTestCase):
     """Test commands."""
 
+    # django.test.testcases.DatabaseOperationForbidden: Database queries
+    # to 'default' are not allowed in SimpleTestCase subclasses
+    # add 'default' to core.tests.test_commands.CommandTest.databases to
+    # silence this failure.
+    # we are using the database in the command to wait_for_db to check
+    # that it is connecte, this is why we have to silence it here
+    databases = ['default']
+
     # each function will get an extra argument, the mocked object that we
     # patched in the class
     def test_wait_for_db_ready(self, mock_patched_check: MagicMock) -> None:
@@ -85,5 +93,5 @@ class CommandTest(SimpleTestCase):
         # check method to call 6 times
         self.assertEqual(mock_patched_check.call_count, 6)
 
-        # makign sure the chek method is called with the default database
+        # makign sure the check method is called with the default database
         mock_patched_check.assert_called_with(databases=['default'])
