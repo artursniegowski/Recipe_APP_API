@@ -32,7 +32,6 @@ class Command(BaseCommand):
                 # Try to establish a connection by executing a test query
                 connections['default'].cursor().execute('SELECT 1')
                 db_conn = True  # if the check is succeesful
-                time.sleep(5)
             except (Psycopg2Error, OperationalError):
                 self.stdout.write("Database unavailable, waiting 1 seconds...")
                 time.sleep(time_to_sleep)
