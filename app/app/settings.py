@@ -40,7 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # custom apps
     'core.apps.CoreConfig',
+    'user.apps.UserConfig',
     'rest_framework',
+    # https://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication # noqa
+    'rest_framework.authtoken',
     'drf_spectacular',
 ]
 
