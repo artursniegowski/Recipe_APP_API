@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # custom apps
     'core.apps.CoreConfig',
     'user.apps.UserConfig',
+    'recipe.apps.RecipeConfig',
     'rest_framework',
     # https://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication # noqa
     'rest_framework.authtoken',

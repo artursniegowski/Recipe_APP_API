@@ -38,4 +38,6 @@ urlpatterns = [
          ),
     # endpoints handling gettting anduser creation
     path('api/user/', include('user.urls')),
+    # endpoints handling teh recipe API
+    path('api/recipe/', include('recipe.urls')),
 ]

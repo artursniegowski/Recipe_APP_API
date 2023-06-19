@@ -9,7 +9,7 @@ app_name = "user"
 
 urlpatterns = [
     # ex: api/user/
-    # POST, GET
+    # POST
     path('create/', views.CreateUserView.as_view(), name='create'),
     # ex: api/user/
     # POST

@@ -1,6 +1,8 @@
 """
 Test for models from the core application.
 """
+from core import models
+from decimal import Decimal
 # helper function to get the default User model for the project
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -111,3 +113,25 @@ class ModelTests(TestCase):
                 password='samlfjdafhasjdfh1231',
             )
             self.assertEqual(user.email, expected)
+
+    def test_create_recipe(self):
+        """Test creating a recipe is successful"""
+
+        # creating a user that will create a recipe
+        user = self.User.objects.create_user(
+            email='test@example.com',
+            password='asdfghjklqwe1341',
+            name='test user',
+        )
+        # creating a recipe
+        recipe = models.Recipe.objects.create(
+            user=user,
+            title='Sample recipe name',
+            time_minutes=5,
+            price=Decimal('5.50'),  # best practice to store prices is int
+            description="Sample recipe description",
+        )
+
+        # checking if the recipe was created corectly
+        # and if the string representaion is same as the title
+        self.assertEqual(str(recipe), recipe.title)

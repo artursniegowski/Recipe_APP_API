@@ -1,6 +1,7 @@
 """
 Database models.
 """
+from django.conf import settings
 from django.db import models
 from django.contrib import auth
 from django.contrib.auth.models import (
@@ -9,7 +10,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import validate_email
+from django.core.validators import validate_email, URLValidator
 from django.core.exceptions import ValidationError
 
 
@@ -129,3 +130,32 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta(AbstractBaseUser.Meta):
         verbose_name = _("user")
         verbose_name_plural = _("users")
+
+
+class Recipe(models.Model):
+    """Recipe object."""
+
+    # this is relationship one to many,
+    # one user, can have many recipe models
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name=_('user'),
+    )
+    title = models.CharField(_("title"), max_length=255,)
+    description = models.TextField(_("description"), blank=True,)
+    time_minutes = models.IntegerField(_("time in minutes"))
+    price = models.DecimalField(
+        _("price"),
+        max_digits=5,
+        decimal_places=2,
+    )
+    link = models.CharField(
+        _('link'),
+        max_length=255,
+        blank=True,
+        validators=[URLValidator()],
+    )
+
+    def __str__(self) -> str:
+        return self.title

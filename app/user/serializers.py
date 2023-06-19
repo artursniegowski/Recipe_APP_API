@@ -22,7 +22,7 @@ class UserSeriazlier(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create and return a user with encrypted password."""
         # to create a user model we want to use own own menthod
-        # called create_user for creating a user a making sure teh password
+        # called create_user for creating a user a making sure the password
         # gets encrypted as defined in our manager
         return get_user_model().objects.create_user(**validated_data)
 
