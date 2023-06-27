@@ -1,7 +1,7 @@
 """
 Test for recipe APis.
 """
-from core.models import Recipe
+from core.models import Recipe, Tag, Ingredient
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -272,3 +272,285 @@ class PrivateRecipeAPITest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         # the object should still exit
         self.assertTrue(Recipe.objects.filter(id=recipe.id).exists())
+
+    def test_create_recipe_with_new_tags(self):
+        """Test creating a recipe with new tags."""
+        # data that will be used to create the recipe with tags
+        # so baically the user can asign tags to recipe,
+        # and if the tags dont exists they will get created
+        # so the url for creating a recipe will also be used
+        # for creating tags
+        payload = {
+            'title': 'Curry',
+            'time_minutes': 30,
+            'price': Decimal('2.50'),
+            'tags': [
+                {'name': 'Thai'},
+                {'name': 'Dinner'},
+            ]
+        }
+
+        # we need to change the format to json bc we are passing
+        # nested objects, the tags are nested objects.
+        res = self.client.post(RECIPE_URL, payload, format='json')
+
+        # tessting the results of creating the recipes
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        recipe = recipes[0]
+        self.assertEqual(recipe.tags.count(), 2)
+        # chekcing if the tags got created properly with the recipe
+        for tag in payload['tags']:
+            exists = recipe.tags.filter(
+                name=tag['name'],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_recipe_with_existing_tags(self):
+        """Test creating a recipe with existing tag."""
+        # this test is to make sure that if a tag aleady exists
+        # and we create a recipe with taht tag that the tag dosent get
+        # created again as this woudl lead to unneccesary duplicates
+
+        tag_indian = Tag.objects.create(user=self.user, name='Indian')
+        payload = {
+            'title': "Butter Chicken",
+            'time_minutes': 60,
+            'price': Decimal('4.50'),
+            'tags': [
+                {'name': 'Indian'},  # this exists and should not be added
+                {'name': 'Dinner'},
+            ]
+        }
+
+        # format json as there a nested objects
+        # creating the recipe with tags
+        res = self.client.post(RECIPE_URL, payload, format='json')
+
+        # evalutaing the results
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        recipe = recipes[0]
+        # the indian tag should not be created as it already exists
+        # so the indain tag shoudl be asigned to this recipe
+        self.assertEqual(recipe.tags.count(), 2)
+        # make sure the indian tag is in the tags created by the self.user
+        self.assertIn(tag_indian, recipe.tags.all())
+        # chekcing if the tags got created properly with the recipe
+        for tag in payload['tags']:
+            exists = recipe.tags.filter(
+                name=tag['name'],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_tag_on_update(self):
+        """Test creating a tag when updating a recipe"""
+        # so basically when we update a recipe, and lets say add a tag
+        # that wasent there before, then this tag needs to be created as well
+
+        recipe = create_recipe(user=self.user)
+        # creaitng the payload to update the tag
+        payload = {'tags': [{'name': 'Lunch'}]}
+        # creating the url
+        url = detail_url(recipe.id)
+        # making the request - (partiala updating), updating the tags
+        # so this dont change anything else
+        res = self.client.patch(url, payload, format='json')
+
+        # chekcing the response
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # chekcing the data
+        new_tag = Tag.objects.get(
+            user=self.user, name=payload['tags'][0]['name']
+            )
+        # now the above request shoul have updated the recipe by adding the
+        # tag in the recipe
+        # you dont need to use the db_refresh bc after call recipe.tags.all()
+        # we are basically mkaign a new query, and it will do the refresh
+        # objects fro this particular recipe
+        self.assertIn(new_tag, recipe.tags.all())
+        # making sure there are the tags
+        self.assertEqual(recipe.tags.count(), 1)
+
+    def test_update_recipe_assign_tag(self):
+        """Test assigning an existing tag when updating a recipe."""
+        # so here we create a recipe with a tag
+        tag_bread = Tag.objects.create(user=self.user, name='Bread')
+        recipe = create_recipe(user=self.user)
+        recipe.tags.add(tag_bread)
+
+        # create a new  objet for testing
+        payload = {
+            'tags': [
+                {'name': 'Lunch'}
+            ]
+        }
+        # and passing the data from the payload to create the object
+        tag_lunch = Tag.objects.create(user=self.user, **payload['tags'][0])
+
+        # creating the url
+        url = detail_url(recipe.id)
+        # making a update request for the tag
+        res = self.client.patch(url, payload, format='json')
+
+        # chcking if it was successful
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # chekcing the data
+        self.assertIn(tag_lunch, recipe.tags.all())
+        # making sure there is only one tag, as the patch request should
+        # update the tag value not add a new value
+        self.assertNotIn(tag_bread, recipe.tags.all())
+        # so we shoudl have only one tag
+        # making sure there are the tags
+        self.assertEqual(recipe.tags.count(), 1)
+
+    def test_clear_recipe_tags(self):
+        """Test clearing a recipes tags."""
+        # clearing all tags asigned to this recipe
+
+        # creating testing data
+        tag = Tag.objects.create(user=self.user, name='Dessert')
+        recipe = create_recipe(user=self.user)
+        recipe.tags.add(tag)
+
+        payload = {'tags': []}
+        url = detail_url(recipe.id)
+        # making the request to clear the tags
+        res = self.client.patch(url, payload, format='json')
+
+        # checking the data
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(recipe.tags.count(), 0)
+
+    def test_creating_recipe_with_new_ingredients(self):
+        """Test creating a recipe with new ingredients."""
+        # craeting test data
+        payload = {
+            'title': 'Tacos',
+            'time_minutes': 60,
+            'price': Decimal('4.30'),
+            'ingredients': [
+                {'name': 'Tacos'},
+                {'name': 'Salt'}
+                ],
+        }
+        # making the request to create the recipe with
+        # ingredients
+        res = self.client.post(RECIPE_URL, payload, format='json')
+
+        # checking the response data if
+        # it is as expected
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        recipe = recipes[0]
+        self.assertEqual(recipe.ingredients.count(), 2)
+        for ingred in payload['ingredients']:
+            exists = recipe.ingredients.filter(
+                name=ingred['name'],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_recipe_with_existing_ingredient(self):
+        """test creating a new recipe with existing ingredient."""
+        # test ingredient bofore we create a recipe
+        ingredient = Ingredient.objects.create(user=self.user, name='Lemon')
+        # pyload to craete a recipe
+        payload = {
+            'title': 'Lemon Soup',
+            'time_minutes': 80,
+            'price': '2.30',
+            'ingredients': [
+                {'name': 'Lemon'},
+                {'name': 'Salt'}
+                ],
+        }
+        # making the request
+        res = self.client.post(RECIPE_URL, payload, format='json')
+
+        # checking the data if it is as expected -
+        # leomn shoudlnot be created twice
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        recipe = recipes[0]
+        self.assertEqual(recipe.ingredients.count(), 2)
+        self.assertIn(ingredient, recipe.ingredients.all())
+        for ingred in payload['ingredients']:
+            exists = recipe.ingredients.filter(
+                name=ingred['name'],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_ingredient_on_update(self):
+        """Test creating an ingredient when updating a recipe."""
+        recipe = create_recipe(user=self.user)
+        # data for the update
+        payload = {
+            'ingredients': [
+                {'name': 'Limes'}
+            ]
+        }
+        # url for the update
+        url = detail_url(recipe.id)
+
+        # making the request
+        res = self.client.patch(url, payload, format='json')
+
+        # checking the data
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        new_ingredient = Ingredient.objects.get(user=self.user, name='Limes')
+        # bc the ingredient donset exists in the database we expect that
+        # our patch request would do that
+        self.assertIn(new_ingredient, recipe.ingredients.all())
+
+    def test_update_recipe_assing_ingredient(self):
+        """Test assigning an existing ingredient when updating a recipe."""
+        # creating test data
+        ingredient1 = Ingredient.objects.create(user=self.user, name='Pepper')
+        recipe = create_recipe(user=self.user)
+        recipe.ingredients.add(ingredient1)
+
+        ingredient2 = Ingredient.objects.create(user=self.user, name='Cheese')
+        payload = {'ingredients': [{'name': 'Cheese'}]}
+        url = detail_url(recipe.id)
+
+        # making the request
+        res = self.client.patch(url, payload, format='json')
+
+        # checking if the request yielded data as expected
+        # if it updated the recipe as expected
+        # so bsically peppershoul change t chili
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(ingredient2, recipe.ingredients.all())
+        self.assertNotIn(ingredient1, recipe.ingredients.all())
+
+    def test_clear_recipe_ingredients(self):
+        """Test clearing a recipes ingredients."""
+        # creating test data
+        ingredient = Ingredient.objects.create(
+            user=self.user,
+            name='Garlick',
+        )
+        recipe = create_recipe(user=self.user)
+        recipe.ingredients.add(ingredient)
+
+        # empty list ofingredients
+        payload = {
+            'ingredients': []
+        }
+
+        url = detail_url(recipe.id)
+
+        # makingthe request
+        res = self.client.patch(url, payload, format='json')
+
+        # checkign the response, if it worked as expected
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(recipe.ingredients.count(), 0)

@@ -156,6 +156,45 @@ class Recipe(models.Model):
         blank=True,
         validators=[URLValidator()],
     )
+    tags = models.ManyToManyField(
+        'Tag',
+        verbose_name=_('tags'),
+    )
+    ingredients = models.ManyToManyField(
+        'Ingredient',
+        verbose_name=_('ingredients'),
+    )
 
     def __str__(self) -> str:
         return self.title
+
+
+class Tag(models.Model):
+    """Tag for filtering recipes."""
+
+    name = models.CharField(_('name'), max_length=255)
+    # this is relationship one to many,
+    # one user, can have many recipe models
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name=_('user'),
+    )
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Ingredient(models.Model):
+    """Ingredient for recipes."""
+    name = models.CharField(_('name'), max_length=255)
+    # this is relationship one to many,
+    # one user, can have many recipe models
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name=_('user'),
+    )
+
+    def __str__(self) -> str:
+        return self.name

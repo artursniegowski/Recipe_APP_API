@@ -49,6 +49,7 @@ class CommandTest(SimpleTestCase):
         # now we want to check if the check function was actually called once,
         # with the default databse
         mock_patched_check.assert_called_once_with(databases=['default'])
+
     # adding a mock only for this function to mock the sleep function
     # this way the wait time from sleep method will not be enforced in the test
     # and it wont hold up or test execution
