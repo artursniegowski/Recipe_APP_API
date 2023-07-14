@@ -140,7 +140,7 @@ class RecipeDetailSerializer(RecipeSerializer):
     # inheriting from the RecipeSerializer.Meta - using it as base
     # and adding to th fields the description
     class Meta(RecipeSerializer.Meta):
-        fields = RecipeSerializer.Meta.fields + ['description','image']
+        fields = RecipeSerializer.Meta.fields + ['description', 'image']
 
 
 # we create a separate serializer because when we upload images we only
