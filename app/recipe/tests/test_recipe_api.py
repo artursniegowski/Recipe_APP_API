@@ -12,6 +12,9 @@ from recipe.serializers import (
 )
 from rest_framework import status
 from rest_framework.test import APIClient
+import os
+from PIL import Image
+import tempfile
 
 
 RECIPE_URL = reverse('recipe:recipe-list')
@@ -20,6 +23,11 @@ RECIPE_URL = reverse('recipe:recipe-list')
 def detail_url(recipe_id):
     """Create and return a recipe detail URL."""
     return reverse('recipe:recipe-detail', args=[recipe_id])
+
+
+def image_upload_url(recipe_id):
+    """Create and return an image upload URL."""
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 
 # helper function for creating recipe
@@ -554,3 +562,63 @@ class PrivateRecipeAPITest(TestCase):
         # checkign the response, if it worked as expected
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(recipe.ingredients.count(), 0)
+
+
+class ImageUploadTest(TestCase):
+    """Test for the image upload API."""
+
+    def setUp(self) -> None:
+        """Creating data before any test."""
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            'user@example.com',
+            'password123',
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_recipe(user=self.user)
+
+    def tearDown(self) -> None:
+        """Used to delete the image after we are done with the test."""
+        # we are doing this bc we dont want to build up the images
+        # every single time we run the testcase
+        # otherwise if you run the test like 1000s times you
+        # might have 1000s of pictures of the machine and you dont want this
+        # you want your test to be clean
+        self.recipe.image.delete()
+
+    def test_upload_image(self):
+        """Test uploading an image to a recipe."""
+        # creating the url
+        url = image_upload_url(self.recipe.id)
+        # helper module that python provided which allows you to create
+        # temporary files when you are working with python code
+        # the temporary file will be created in the contex menager
+        # (in the with) statment
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            # moving back to the begingin of the file otherwise
+            # it will think we have read to the end of the file
+            # because as soon as you do the img.save the pointer goes to the
+            # end of the file, so we need to go to the beging of the file to
+            # actually upload it
+            image_file.seek(0)
+            payload = {
+                'image': image_file,
+            }
+            # making the post request wiht the multipart bc the image
+            # is being posted in the payload
+            res = self.client.post(url, payload, format='multipart')
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Test uploading invalid image."""
+        url = image_upload_url(self.recipe.id)
+        payload = {'image': 'not_an_image'}
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

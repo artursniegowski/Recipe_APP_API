@@ -140,4 +140,23 @@ class RecipeDetailSerializer(RecipeSerializer):
     # inheriting from the RecipeSerializer.Meta - using it as base
     # and adding to th fields the description
     class Meta(RecipeSerializer.Meta):
-        fields = RecipeSerializer.Meta.fields + ['description']
+        fields = RecipeSerializer.Meta.fields + ['description','image']
+
+
+# we create a separate serializer because when we upload images we only
+# need to accepts the image field, and we dont need to accept all the other
+# values that are part of the recipe objects
+# we are doing it as seperate API because it is best practice
+# to upload only one type of data to an API, so we dont want to be uploading
+# a form data which contains all the form data of a recipe as well as an image
+class RecipeImageSerializer(serializers.ModelSerializer):
+    """Serializer for uplading images to recipes."""
+
+    class Meta:
+        model = Recipe
+        fields = ['id', 'image']
+        # TODO: i think id is not needed here as the model
+        # should enforce that, therfore the serializer should
+        # enforce this at the id automaticly
+        read_only_fields = ['id']
+        extra_kwargs = {'image': {'required': 'True'}}

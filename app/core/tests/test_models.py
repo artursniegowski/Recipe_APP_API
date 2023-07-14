@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
+from unittest.mock import patch
 
 
 def create_user(email='user@example.com', password='testpassword'):
@@ -162,3 +163,16 @@ class ModelTests(TestCase):
         )
         # check if the ingredient got created
         self.assertEqual(str(ingredient), ingredient.name)
+
+    # ensuring the path name is unique
+    # patching the uuid4 function - replacing the value of uuid
+    @patch('core.models.uuid.uuid4')
+    def test_recipe_file_name_uuid(self, mock_uuid):
+        """Test generating image path."""
+        uuid = 'test-uuid'
+        # setting own uuid for the test
+        mock_uuid.return_value = uuid
+        # function to generate the patch to the image that is being uploaded
+        file_path = models.recipe_image_file_path(None, 'example.jpg')
+
+        self.assertEqual(file_path, f'uploads/recipe/{uuid}.jpg')

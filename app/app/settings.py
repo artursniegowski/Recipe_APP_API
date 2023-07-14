@@ -133,7 +133,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = 'static/static/'
+MEDIA_URL = 'static/media/'
+
+# $ python manage.py collectstatic
+# This will copy all files from your static folders into the STATIC_ROOT 
+# directory.
+
+STATIC_ROOT = '/vol/web/media'
+MEDIA_ROOT = '/vol/web/static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -156,3 +164,10 @@ REST_FRAMEWORK = {
 #     'VERSION': '1.0.0',
 #     'SERVE_INCLUDE_SCHEMA': False,
 # }
+
+# For spectacular for the imageField
+# https://drf-spectacular.readthedocs.io/en/latest/faq.html#filefield-imagefield-is-not-handled-properly-in-the-schema  # noqa
+# to make the image upload to work through the browsable interface
+SPECTACULAR_SETTINGS = {
+    'COMPONENT_SPLIT_REQUEST': True,
+}

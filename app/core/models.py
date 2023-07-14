@@ -12,6 +12,18 @@ from django.contrib.auth.models import (
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import validate_email, URLValidator
 from django.core.exceptions import ValidationError
+import uuid
+import os
+
+
+# function to be used to generate the patch to the image that
+# will be uploaded
+def recipe_image_file_path(instance, file_name):
+    """Generates file path for  new recipe image."""
+    ext = os.path.splitext(file_name)[1]
+    file_name = f'{uuid.uuid4()}{ext}'
+
+    return os.path.join('uploads', 'recipe', file_name)
 
 
 class UserManager(BaseUserManager):
@@ -163,6 +175,12 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         'Ingredient',
         verbose_name=_('ingredients'),
+    )
+    image = models.ImageField(
+        _('Image'),
+        null=True,
+        # we are just passing the refrence to the function!
+        upload_to=recipe_image_file_path,
     )
 
     def __str__(self) -> str:
