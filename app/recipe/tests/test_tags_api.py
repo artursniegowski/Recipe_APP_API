@@ -1,7 +1,8 @@
 """
 Tests for the tags API.
 """
-from core.models import Tag
+from core.models import Recipe, Tag
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -109,3 +110,51 @@ class PrivateTagsApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
+
+    def test_filter_tags_assigned_to_recipes(self):
+        """Test listing tags to thoes assigned to recipes."""
+        tag1 = Tag.objects.create(user=self.user, name='Breakfast')
+        tag2 = Tag.objects.create(user=self.user, name='Lunch')
+        recipe = Recipe.objects.create(
+            title='Green Eggs on Toast',
+            time_minutes=10,
+            price=Decimal('2.50'),
+            user=self.user,
+        )
+        recipe.tags.add(tag1)
+
+        # making the request with the params
+        res = self.client.get(TAGS_URL, {'assigned_only': 1})
+
+        # checking data
+        s1 = TagSerializer(tag1)
+        s2 = TagSerializer(tag2)
+        self.assertTrue(res.status_code, status.HTTP_200_OK)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_tags_unique(self):
+        """Test filtered tags returns a unique list."""
+        tag1 = Tag.objects.create(user=self.user, name='Breakfast')
+        Tag.objects.create(user=self.user, name='Dinner')
+        recipe1 = Recipe.objects.create(
+            title='Pancakes',
+            time_minutes=100,
+            price=Decimal('6.50'),
+            user=self.user,
+        )
+        recipe2 = Recipe.objects.create(
+            title='Pallela',
+            time_minutes=50,
+            price=Decimal('16.50'),
+            user=self.user,
+        )
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag1)
+
+        # making the request with the params
+        res = self.client.get(TAGS_URL, {'assigned_only': 1})
+
+        # checking data
+        self.assertTrue(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
