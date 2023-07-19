@@ -20,6 +20,8 @@ The Recipe API is a fully functioning and robust web application built using Pyt
 - GitHub Actions: Used for continuous integration and continuous deployment (CI/CD) to automate testing and linting whenever code is pushed to GitHub.</br>
 - Flake8: A tool for enforcing style guide rules and ensuring code quality.</br>
 - TDD (Test Driven Development): The project was developed using TDD principles, where tests were written before implementing functionality.</br>
+- Components used for deployment: uWSGI, NGinx, docker-compose. </br>
+
 
 </br>
 
