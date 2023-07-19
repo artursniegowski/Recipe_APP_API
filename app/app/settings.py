@@ -20,12 +20,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-q8x%r=5hpm6m$9-*zsl%%c)^5qo7#k$w(p8s+)jelwssq16ph9'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# so if DEBUG is 1 = True, and if DEBUG is 0 = False
+DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 
+# accessible only via specific hosts names
+# so you want to make sure only that hostname can be used because otherwise
+# it can open your applciation fro certain vulnerabilities
+# we will accept a coma seperated list and we will add all of them
+# bc there can be many
 ALLOWED_HOSTS = []
+# so we getting all the host, and it dosent exists we will set a emty value ''
+# next we are spliting everything by a coma , and filter out all the None vals,
+# so basicaly if the list is empty the filter function will return empty list
+# and extedn will not add anything to the empty list
+ALLOWED_HOSTS.extend(
+    filter(
+        None,
+        os.environ.get('ALLOWED_HOSTS', '').split(','),
+    )
+)
 
 
 # Application definition
